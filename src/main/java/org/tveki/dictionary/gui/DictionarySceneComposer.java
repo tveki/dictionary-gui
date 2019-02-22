@@ -5,10 +5,14 @@
  */
 package org.tveki.dictionary.gui;
 
+import java.util.Arrays;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
@@ -27,6 +31,7 @@ public class DictionarySceneComposer {
     private ComboBox<Language> toLanguageChooser;
     private TextField phraseField;
     private Button translateButton;
+    private ListView<String> translationList;
 
     private static final Language[] LANGUAGES = {
         Language.ENGLISH,
@@ -42,13 +47,27 @@ public class DictionarySceneComposer {
         
         phraseField = new TextField();
         translateButton = new Button("Translate");
-
+        translateButton.setOnAction(this::onTranslateClick);
+        
+        ObservableList<String> translations = FXCollections.observableArrayList();
+        translations.add("kutya");
+        translations.add("eb");
+        
+        translationList = new ListView<>();
+        translationList.setPrefSize(200, 250);
+        translationList.setItems(translations);
+      
         pane.getChildren().add(fromLanguageChooser);
         pane.getChildren().add(toLanguageChooser);
         pane.getChildren().add(phraseField);
         pane.getChildren().add(translateButton);
+        pane.getChildren().add(translationList);
 
         return new Scene(pane, SCENE_WIDTH, SCENE_HEIGHT);
+    }
+    
+    private void onTranslateClick(ActionEvent event) {
+        
     }
 
     private void initFromLanguageChooser() {
