@@ -16,7 +16,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
+import org.tveki.dictionary.api.Dictionary;
 import org.tveki.dictionary.api.Language;
+import org.tveki.dictionary.api.TranslateRequest;
+import org.tveki.dictionary.api.TranslateResponse;
+import org.tveki.glosbe.dictionary.GlosbeDictionary;
 
 /**
  *
@@ -32,6 +36,8 @@ public class DictionarySceneComposer {
     private TextField phraseField;
     private Button translateButton;
     private ListView<String> translationList;
+    
+    private Dictionary dictionary = new GlosbeDictionary();
 
     private static final Language[] LANGUAGES = {
         Language.ENGLISH,
@@ -49,13 +55,8 @@ public class DictionarySceneComposer {
         translateButton = new Button("Translate");
         translateButton.setOnAction(this::onTranslateClick);
         
-        ObservableList<String> translations = FXCollections.observableArrayList();
-        translations.add("kutya");
-        translations.add("eb");
-        
         translationList = new ListView<>();
-        translationList.setPrefSize(200, 250);
-        translationList.setItems(translations);
+        translationList.setPrefHeight(SCENE_HEIGHT);
       
         pane.getChildren().add(fromLanguageChooser);
         pane.getChildren().add(toLanguageChooser);
@@ -67,7 +68,7 @@ public class DictionarySceneComposer {
     }
     
     private void onTranslateClick(ActionEvent event) {
-        
+        showTranslations();
     }
 
     private void initFromLanguageChooser() {
@@ -82,6 +83,23 @@ public class DictionarySceneComposer {
         toLanguageChooser.setConverter(languageConverter());
         toLanguageChooser.getItems().addAll(LANGUAGES);
         toLanguageChooser.setValue(Language.HUNGARIAN);
+    }
+    
+    private void showTranslations() {
+        TranslateRequest request = prepareRequest();
+        TranslateResponse response = dictionary.translate(request);
+        
+        ObservableList<String> translations = FXCollections.observableArrayList();
+        translations.addAll(response.getTranslations());
+        translationList.setItems(translations);
+    }
+
+    private TranslateRequest prepareRequest() {
+        TranslateRequest request = new TranslateRequest();
+        request.setFrom(fromLanguageChooser.getValue());
+        request.setTo(toLanguageChooser.getValue());
+        request.setPhrase(phraseField.getText());
+        return request;
     }
     
     private StringConverter<Language> languageConverter() {
