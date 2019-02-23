@@ -5,9 +5,10 @@
  */
 package org.tveki.dictionary.gui;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -35,9 +36,12 @@ public class DictionarySceneComposer {
     private ComboBox<Language> toLanguageChooser;
     private TextField phraseField;
     private Button translateButton;
+    private Button meaningButton;
     private ListView<String> translationList;
     
     private Dictionary dictionary = new GlosbeDictionary();
+    
+    private TranslationCache cache;
 
     private static final Language[] LANGUAGES = {
         Language.ENGLISH,
@@ -47,21 +51,28 @@ public class DictionarySceneComposer {
 
     public Scene compose() {
         VBox pane = new VBox();
+        
+        cache = new TranslationCache();
 
         initFromLanguageChooser();
         initToLanguageChooser();
         
         phraseField = new TextField();
+        
         translateButton = new Button("Translate");
         translateButton.setOnAction(this::onTranslateClick);
         
+        meaningButton = new Button("Meaning");
+        meaningButton.setOnAction(this::onMeaningClick);
+        
         translationList = new ListView<>();
-        translationList.setPrefHeight(SCENE_HEIGHT);
+        translationList.setPrefHeight(CanvasProps.CANVAS_HEIGHT);
       
         pane.getChildren().add(fromLanguageChooser);
         pane.getChildren().add(toLanguageChooser);
         pane.getChildren().add(phraseField);
         pane.getChildren().add(translateButton);
+        pane.getChildren().add(meaningButton);
         pane.getChildren().add(translationList);
 
         return new Scene(pane, SCENE_WIDTH, SCENE_HEIGHT);
@@ -69,6 +80,10 @@ public class DictionarySceneComposer {
     
     private void onTranslateClick(ActionEvent event) {
         showTranslations();
+    }
+    
+    private void onMeaningClick(ActionEvent event) {
+        showMeanings();
     }
 
     private void initFromLanguageChooser() {
@@ -86,15 +101,43 @@ public class DictionarySceneComposer {
     }
     
     private void showTranslations() {
-        TranslateRequest request = prepareRequest();
-        TranslateResponse response = dictionary.translate(request);
+        showResult(cache::getTranslations);
+    }
+    
+    private void showMeanings() {
+        showResult(cache::getMeanings);
+    }
+    
+    private void showResult(Supplier<List<String>> resultSupplier) {
+        String phrase = phraseField.getText();
         
-        ObservableList<String> translations = FXCollections.observableArrayList();
-        translations.addAll(response.getTranslations());
-        translationList.setItems(translations);
+        if (phrase == null || phrase.trim().isEmpty()) {
+            refreshTranslationListView(() -> Collections.EMPTY_LIST);
+            return;
+        }
+        
+        TranslateRequest request = createRequest();
+        
+        if (!request.equals(cache.getTask())) {
+            updateTranslationCache(request);
+        }    
+        
+        refreshTranslationListView(resultSupplier);
     }
 
-    private TranslateRequest prepareRequest() {
+    private void refreshTranslationListView(Supplier<List<String>> resultSupplier) {
+        translationList.setItems(FXCollections.observableArrayList(resultSupplier.get()));
+    }
+
+    private void updateTranslationCache(TranslateRequest request) {
+        TranslateResponse response = dictionary.translate(request);
+        
+        cache.setTask(request);
+        cache.setTranslations(response.getTranslations());
+        cache.setMeanings(response.getMeanings());
+    }
+
+    private TranslateRequest createRequest() {
         TranslateRequest request = new TranslateRequest();
         request.setFrom(fromLanguageChooser.getValue());
         request.setTo(toLanguageChooser.getValue());
