@@ -53,6 +53,7 @@ public class DictionarySceneComposer {
     private static final Language[] LANGUAGES = {
         Language.ENGLISH,
         Language.GERMAN,
+        Language.SPANISH,
         Language.HUNGARIAN
     };
 
